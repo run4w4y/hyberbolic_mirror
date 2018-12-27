@@ -12,7 +12,7 @@ x = np.linspace(min_val-10, max_val+10, 500000)
 step = 0.125
 height = 70
 a = 1
-diameter = 215
+diameter = 115
 
 
 # get all of the intersections of two graphs
@@ -102,6 +102,12 @@ plt.axhline(f1, linestyle='--', color='purple')
 tsp = get_intersection(0*x+f1, y)
 plt.plot([tsp[0][0], tsp[1][0]], [tsp[0][1], tsp[1][1]], '-', color='purple')
 
+# calculating and plotting angle
+
+for i in tsp:
+    plt.plot([i[0], 0], [i[1], f2], '-', color='blue')
+alpha = f1*2/dist(tsp[0], (0, f2))
+
 # top focal point
 plt.plot(0, f1, 'ro')
 
@@ -132,8 +138,8 @@ textstr = '\n'.join((
     r'$\mathrm{diameter}=%.0f$' % (diameter, ),
     r'$\mathrm{a}=%.2f$' % (a, ),
     r'$\mathrm{scale}=1:%.2f$' % (scale, ),
-    r'$\alpha=%.2f$' % (np.arctan(1), )))
-props = dict(boxstyle='round', facecolor=(0.93, 0.93, 0.93), alpha=0.5)
+    r'$\alpha=%.2f$deg' % (float(np.degrees(np.arccos(alpha))), )))
+props = dict(boxstyle='round', facecolor=(0.97, 0.97, 0.97), alpha=0.5)
 ax.text(0.01, 0.06, textstr, transform=ax.transAxes, fontsize=14,
         verticalalignment='bottom', bbox=props)
 
