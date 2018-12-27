@@ -1,6 +1,49 @@
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
+from matplotlib.patches import Arc
+from matplotlib.transforms import IdentityTransform
 import numpy as np
+
+
+class AngleMarker(Arc):
+    def __init__(self, xy, size, vec1, vec2, ax=None, **kwargs):
+        self._xydata = xy  # in data coordinates
+        self.ax = ax or plt.gca()
+        self.vec1 = vec1  # tuple or array of coordinates, relative to xy
+        self.vec2 = vec2  # tuple or array of coordinates, relative to xy
+
+        super().__init__(self._xydata, size, size, angle=0.0,
+                         theta1=self.theta1, theta2=self.theta2, **kwargs)
+
+        self.set_transform(IdentityTransform())
+        self.ax.add_patch(self)
+
+    def get_center_pixels(self):
+        """ return center in pixel coordinates """
+        return self.ax.transData.transform(self._xydata)
+
+    def set_center(self, xy):
+        """ set center in data coordinates """
+        self._xydata = xy
+
+    _center = property(get_center_pixels, set_center)
+
+    def get_theta(self, vec):
+        vec_in_pixels = self.ax.transData.transform(vec) - self._center
+        return np.rad2deg(np.arctan2(vec_in_pixels[1], vec_in_pixels[0]))
+
+    def get_theta1(self):
+        return self.get_theta(self.vec1)
+
+    def get_theta2(self):
+        return self.get_theta(self.vec2)
+
+    def set_theta(self, angle):
+        pass
+
+    theta1 = property(get_theta1, set_theta)
+    theta2 = property(get_theta2, set_theta)
+
 
 fig, ax = plt.subplots(figsize=(15.5, 15))
 
@@ -17,6 +60,7 @@ diameter = 115
 
 # get all of the intersections of two graphs
 def get_intersection(y1, y2):
+    global x
     index = np.argwhere(np.diff(np.sign(y1 - y2))).flatten()
     r = []
     for i in index:
@@ -39,6 +83,7 @@ def dist(pt1, pt2):
 
 # create a line from two points
 def get_line(pt1, pt2):
+    global x
     cf = np.polyfit((pt1[0], pt2[0]), (pt1[1], pt2[1]), 1)
     p = np.poly1d(cf)
     return p(x)
@@ -83,15 +128,15 @@ plt.axvline(0, color='black')
 # setting up appearance of the plot - end
 
 # hyperbola itself
-plt.plot(x, y, 'green')
+plt.plot(x, y, '#f15a22')
 
 # plotting left part
-plt.plot(x, y_left_ref, 'blue')
-plt.plot([0, ptl[0]], [f2, ptl[1]], 'b-')
+plt.plot(x, y_left_ref, 'gray')
+plt.plot([0, ptl[0]], [f2, ptl[1]], '-', color='green')
 
 # plotting right part
-plt.plot(x, y_right_ref, 'blue')
-plt.plot([0, ptr[0]], [f2, ptr[1]], 'b-')
+plt.plot(x, y_right_ref, 'gray')
+plt.plot([0, ptr[0]], [f2, ptr[1]], '-', color='green')
 
 # bottom slice
 plt.axhline(ptl[1], linestyle='--', color='purple')
@@ -101,12 +146,6 @@ plt.plot([ptl[0], ptr[0]], [ptl[1], ptr[1]], '-', color='purple')
 plt.axhline(f1, linestyle='--', color='purple')
 tsp = get_intersection(0*x+f1, y)
 plt.plot([tsp[0][0], tsp[1][0]], [tsp[0][1], tsp[1][1]], '-', color='purple')
-
-# calculating and plotting angle
-
-for i in tsp:
-    plt.plot([i[0], 0], [i[1], f2], '-', color='blue')
-alpha = f1*2/dist(tsp[0], (0, f2))
 
 # top focal point
 plt.plot(0, f1, 'ro')
@@ -119,17 +158,28 @@ text_point((0, f1))
 text_point((0, f2))
 text_point(ptl)
 text_point(ptr)
-plt.plot(ptl[0], ptl[1], 'bo')
-plt.plot(ptr[0], ptr[1], 'bo')
+plt.plot(ptl[0], ptl[1], 'o', color='purple')
+plt.plot(ptr[0], ptr[1], 'o', color='purple')
 for i in tsp:
     plt.plot(i[0], i[1], 'o', color='purple')
     text_point(i)
 
+# calculating and plotting angle
+plt.plot([tsp[0][0], 0], [tsp[0][1], f2], '-', color='blue')
+plt.plot([tsp[1][0], 0], [tsp[1][1], f2], '-', color='green')
+plt.plot([0, 0], [f1, f2], '-', color='blue')
+plt.plot([tsp[0][0], min_val - 10], [tsp[0][1], tsp[0][1]], '-', color='green')
+plt.plot([tsp[1][0], max_val + 10], [tsp[1][1], tsp[0][1]], '-', color='green')
+alpha = f1*2/dist(tsp[0], (0, f2))
+AngleMarker((0, f2), 600, (0, f1), tsp[0], ax=ax, color='blue')
+
 # legend
 patches = []
-patches.append(mpatches.Patch(color='green', label='hyperbola (mirror)'))
+patches.append(mpatches.Patch(color='#f15a22', label='hyperbola (mirror)'))
 patches.append(mpatches.Patch(color='red', label='focal points'))
 patches.append(mpatches.Patch(color='purple', label='slices'))
+patches.append(mpatches.Patch(color='blue', label='alpha'))
+patches.append(mpatches.Patch(color='green', label="rays from camera's focal point"))
 plt.legend(handles=patches, loc='lower left')
 
 # textbox
@@ -140,7 +190,7 @@ textstr = '\n'.join((
     r'$\mathrm{scale}=1:%.2f$' % (scale, ),
     r'$\alpha=%.2f$deg' % (float(np.degrees(np.arccos(alpha))), )))
 props = dict(boxstyle='round', facecolor=(0.97, 0.97, 0.97), alpha=0.5)
-ax.text(0.01, 0.06, textstr, transform=ax.transAxes, fontsize=14,
+ax.text(0.01, 0.03 + len(patches)*0.012, textstr, transform=ax.transAxes, fontsize=14,
         verticalalignment='bottom', bbox=props)
 
 # setting up appearance of the plot - start
