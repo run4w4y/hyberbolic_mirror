@@ -161,14 +161,45 @@ plt.plot([tsp[1][0], max_val + 10], [tsp[1][1], tsp[0][1]], '-', color='green')
 alpha = f1*2/dist(tsp[0], (0, f2))
 AngleMarker((0, f2), 600, (0, f1), tsp[0], ax=ax, color='blue')
 
+# vertex point
+vertex = (0, b)
+
 # height segment
-plt.plot([max_val-step, max_val-step], [f1, f2], 'o-', color='#96281b')
-plt.plot([max_val-step, max_val-step*2], [f1, f1], '-', color='#96281b')
-plt.plot([max_val-step, max_val-step*2], [f2, f2], '-', color='#96281b')
+plt.plot([max_val-step, max_val-step], [f1, f2], 'o-', color='#913d88')
+plt.plot([max_val-step, max_val-step*2], [f1, f1], '-', color='#913d88')
+plt.plot([max_val-step, max_val-step*2], [f2, f2], '-', color='#913d88')
 
 # height text
-plt.text(max_val-step*2, 0, 'height', fontsize=32, color='#96281b', verticalalignment='center',
+plt.text(max_val-step*1.5, 0, 'height', fontsize=18, color='#913d88', verticalalignment='center',
          horizontalalignment='center', rotation='vertical')
+
+# lens' height segment
+plt.plot([max_val-step, max_val-step], [f1, vertex[1]], 'o-', color='#4d13d1')
+plt.plot([max_val-step, max_val-step*2], [f1, f1], '-', color='#4d13d1')
+plt.plot([max_val-step, max_val-step*2], [vertex[1], vertex[1]], '-', color='#4d13d1')
+
+# lens' height text
+lensl = f1 - vertex[1]
+plt.text(max_val-step*1.5, lensl/2 + vertex[1], str(round(lensl*scale, 2))+' mm.', fontsize=18, color='#4d13d1',
+         verticalalignment='center', horizontalalignment='center', rotation='vertical')
+
+# top slice's width segment
+plt.plot([tsp[0][0], tsp[1][0]], [0, 0], 'o-', color='#913d88')
+plt.plot([tsp[0][0], tsp[0][0]], [0, step], '-', color='#913d88')
+plt.plot([tsp[1][0], tsp[1][0]], [0, step], '-', color='#913d88')
+
+# top slice's width text
+plt.text(0, -step*0.5, str(round(abs(tsp[0][0] - tsp[1][0])*scale, 2))+' mm.', fontsize=18, color='#663399',
+         verticalalignment='center', horizontalalignment='center')
+
+# bottom slice's width segment
+plt.plot([ptl[0], ptr[0]], [0, 0], 'o-', color='#4d13d1')
+plt.plot([ptl[0], ptl[0]], [0, step], '-', color='#4d13d1')
+plt.plot([ptr[0], ptr[0]], [0, step], '-', color='#4d13d1')
+
+# bottom slice's width text
+plt.text(0, step*0.5, str(round(abs(ptl[0] - ptr[0])*scale, 2))+' mm.', fontsize=18, color='#4d13d1',
+         verticalalignment='center', horizontalalignment='center')
 
 # text with coordinates nearby points
 text_point((0, f1))
@@ -180,7 +211,6 @@ plt.plot(ptr[0], ptr[1], 'o', color='purple')
 for i in tsp:
     plt.plot(i[0], i[1], 'o', color='purple')
     text_point(i)
-vertex = (0, b)
 text_point(vertex, pos='bottom')
 plt.plot(vertex[0], vertex[1], 'o', color='#f15a22')
 
