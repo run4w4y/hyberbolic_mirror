@@ -131,11 +131,11 @@ plt.axvline(0, color='black')
 plt.plot(x, y, '#f15a22')
 
 # plotting left part
-plt.plot(x, y_left_ref, 'gray')
+plt.plot(x, y_left_ref, color=(0.3, 0.3, 0.3))
 plt.plot([0, ptl[0]], [f2, ptl[1]], '-', color='green')
 
 # plotting right part
-plt.plot(x, y_right_ref, 'gray')
+plt.plot(x, y_right_ref, color=(0.3, 0.3, 0.3))
 plt.plot([0, ptr[0]], [f2, ptr[1]], '-', color='green')
 
 # bottom slice
@@ -147,11 +147,23 @@ plt.axhline(f1, linestyle='--', color='purple')
 tsp = get_intersection(0*x+f1, y)
 plt.plot([tsp[0][0], tsp[1][0]], [tsp[0][1], tsp[1][1]], '-', color='purple')
 
-# top focal point
-plt.plot(0, f1, 'ro')
+# calculating and plotting angle
+plt.plot([tsp[0][0], 0], [tsp[0][1], f2], '-', color='blue')
+plt.plot([tsp[1][0], 0], [tsp[1][1], f2], '-', color='green')
+plt.plot([0, 0], [f1, f2], '-', color='blue')
+plt.plot([tsp[0][0], min_val - 10], [tsp[0][1], tsp[0][1]], '-', color='green')
+plt.plot([tsp[1][0], max_val + 10], [tsp[1][1], tsp[0][1]], '-', color='green')
+alpha = f1*2/dist(tsp[0], (0, f2))
+AngleMarker((0, f2), 600, (0, f1), tsp[0], ax=ax, color='blue')
 
-# bottom focal point
-plt.plot(0, f2, 'ro')
+# height segment
+plt.plot([max_val-step, max_val-step], [f1, f2], 'o-', color='#96281b')
+plt.plot([max_val-step, max_val-step*2], [f1, f1], '-', color='#96281b')
+plt.plot([max_val-step, max_val-step*2], [f2, f2], '-', color='#96281b')
+
+# height text
+plt.text(max_val-step*2, 0, 'height', fontsize=32, color='#96281b', verticalalignment='center',
+         horizontalalignment='center', rotation='vertical')
 
 # text with coordinates nearby points
 text_point((0, f1))
@@ -164,14 +176,11 @@ for i in tsp:
     plt.plot(i[0], i[1], 'o', color='purple')
     text_point(i)
 
-# calculating and plotting angle
-plt.plot([tsp[0][0], 0], [tsp[0][1], f2], '-', color='blue')
-plt.plot([tsp[1][0], 0], [tsp[1][1], f2], '-', color='green')
-plt.plot([0, 0], [f1, f2], '-', color='blue')
-plt.plot([tsp[0][0], min_val - 10], [tsp[0][1], tsp[0][1]], '-', color='green')
-plt.plot([tsp[1][0], max_val + 10], [tsp[1][1], tsp[0][1]], '-', color='green')
-alpha = f1*2/dist(tsp[0], (0, f2))
-AngleMarker((0, f2), 600, (0, f1), tsp[0], ax=ax, color='blue')
+# top focal point
+plt.plot(0, f1, 'ro')
+
+# bottom focal point
+plt.plot(0, f2, 'ro')
 
 # legend
 patches = []
@@ -184,11 +193,12 @@ plt.legend(handles=patches, loc='lower left')
 
 # textbox
 textstr = '\n'.join((
-    r'$\mathrm{height}=%.0f$' % (height, ),
-    r'$\mathrm{diameter}=%.0f$' % (diameter, ),
+    r'$\mathrm{height}=%.0f$ mm.' % (height, ),
+    r'$\mathrm{diameter}=%.0f$ mm.' % (diameter, ),
     r'$\mathrm{a}=%.2f$' % (a, ),
+    r'$\mathrm{b}=%.2f$' % (b, ),
     r'$\mathrm{scale}=1:%.2f$' % (scale, ),
-    r'$\alpha=%.2f$deg' % (float(np.degrees(np.arccos(alpha))), )))
+    r'$\alpha=%.2f\degree$' % (float(np.degrees(np.arccos(alpha))), )))
 props = dict(boxstyle='round', facecolor=(0.97, 0.97, 0.97), alpha=0.5)
 ax.text(0.01, 0.03 + len(patches)*0.012, textstr, transform=ax.transAxes, fontsize=14,
         verticalalignment='bottom', bbox=props)
