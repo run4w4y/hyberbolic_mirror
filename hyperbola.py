@@ -71,8 +71,13 @@ def get_intersection(y1, y2):
 
 
 # add text with coordinates nearby point
-def text_point(pt):
-    plt.text(pt[0] + step / 5, pt[1] + step / 5, str((round(pt[0], 4), round(pt[1], 4))), fontsize=12)
+def text_point(pt, pos='top'):
+    if pos == 'top':
+        plt.text(pt[0] + step / 5, pt[1] + step / 5, str((round(pt[0], 4), round(pt[1], 4))), fontsize=12,
+                 verticalalignment='bottom')
+    elif pos == 'bottom':
+        plt.text(pt[0] + step / 5, pt[1] - step / 5, str((round(pt[0], 4), round(pt[1], 4))), fontsize=12,
+                 verticalalignment='top')
     return None
 
 
@@ -175,6 +180,9 @@ plt.plot(ptr[0], ptr[1], 'o', color='purple')
 for i in tsp:
     plt.plot(i[0], i[1], 'o', color='purple')
     text_point(i)
+vertex = (0, b)
+text_point(vertex, pos='bottom')
+plt.plot(vertex[0], vertex[1], 'o', color='#f15a22')
 
 # top focal point
 plt.plot(0, f1, 'ro')
