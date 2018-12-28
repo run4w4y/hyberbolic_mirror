@@ -170,7 +170,7 @@ plt.plot([max_val-step, max_val-step*2], [f1, f1], '-', color='#913d88')
 plt.plot([max_val-step, max_val-step*2], [f2, f2], '-', color='#913d88')
 
 # height text
-plt.text(max_val-step*1.5, 0, 'height', fontsize=18, color='#913d88', verticalalignment='center',
+plt.text(max_val-step*1.5, 0, str(height)+' mm.', fontsize=18, color='#913d88', verticalalignment='center',
          horizontalalignment='center', rotation='vertical')
 
 # lens' height segment
@@ -200,6 +200,16 @@ plt.plot([ptr[0], ptr[0]], [0, step], '-', color='#4d13d1')
 # bottom slice's width text
 plt.text(0, step*0.5, str(round(abs(ptl[0] - ptr[0])*scale, 2))+' mm.', fontsize=18, color='#4d13d1',
          verticalalignment='center', horizontalalignment='center')
+
+# actual lens' height segment
+plt.plot([min_val+step, min_val+step], [f1, ptl[1]], 'o-', color='#4d13d1')
+plt.plot([min_val+step, min_val+step*2], [f1, f1], '-', color='#4d13d1')
+plt.plot([min_val+step, min_val+step*2], [ptl[1], ptl[1]], '-', color='#4d13d1')
+
+# actual lens' height text
+alensl = f1 - ptl[1]
+plt.text(min_val+step*1.5, alensl/2 + ptl[1], str(round(alensl*scale, 2))+' mm.', fontsize=18, color='#4d13d1',
+         verticalalignment='center', horizontalalignment='center', rotation='vertical')
 
 # text with coordinates nearby points
 text_point((0, f1))
