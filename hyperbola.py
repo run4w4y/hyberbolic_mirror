@@ -4,6 +4,13 @@ from matplotlib.patches import Arc
 from matplotlib.transforms import IdentityTransform
 import numpy as np
 
+min_val = -1.5  # min value
+max_val = 1.5  # max value
+step = 0.125
+height = 70
+a = 1
+diameter = 115
+
 
 class AngleMarker(Arc):
     def __init__(self, xy, size, vec1, vec2, ax=None, **kwargs):
@@ -45,51 +52,95 @@ class AngleMarker(Arc):
     theta2 = property(get_theta2, set_theta)
 
 
+class Point2D:
+    x, y = (float(0), float(0))
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def text(self, pos='top'):
+        if pos == 'top':
+            plt.text(self.x + step / 5, self.y + step / 5, str((round(self.x, 4), round(self.y, 4))), fontsize=12,
+                     verticalalignment='bottom')
+        elif pos == 'bottom':
+            plt.text(self.x + step / 5, self.y - step / 5, str((round(self.x, 4), round(self.y, 4))), fontsize=12,
+                     verticalalignment='top')
+        return None
+
+    def dist(self, pt):
+        return np.sqrt((self.x - pt.x) ** 2 + (self.y - pt.y) ** 2)
+
+    def show(self, color='black'):
+        plt.plot(self.x, self.y, 'o', color=color)
+        return None
+
+    def show_seg(self, pt, color='black', style='o-'):
+        plt.plot([self.x, pt.x], [self.y, pt.y], style, color=color)
+        return None
+
+    def to_tup(self):
+        return self.x, self.y
+
+    def cx(self, new_x):
+        return Point2D(new_x, self.y)
+
+    def cy(self, new_y):
+        return Point2D(self.x, new_y)
+
+
+# draw segment with distance in mm
+def distance_seg(point1, point2, scale, pos='right_y', color='black', text_pos='top'):
+    x1 = point1.x
+    x2 = point2.x
+    y1 = point1.y
+    y2 = point2.y
+    if pos == 'right_y':
+        plt.plot([max_val-step, max_val-step], [y1, y2], 'o-', color=color)
+        plt.plot([max_val-step, max_val-step*2], [y1, y1], '-', color=color)
+        plt.plot([max_val-step, max_val-step*2], [y2, y2], '-', color=color)
+
+        d = abs(y1 - y2)
+        plt.text(max_val-step*1.5, d/2 + min(y1, y2), str(round(d*scale, 2))+' mm.', fontsize=18,
+                 color=color, verticalalignment='center', horizontalalignment='center', rotation='vertical')
+    if pos == 'left_y':
+        plt.plot([min_val + step, min_val + step], [y1, y2], 'o-', color=color)
+        plt.plot([min_val + step, min_val + step * 2], [y1, y1], '-', color=color)
+        plt.plot([min_val + step, min_val + step * 2], [y2, y2], '-', color=color)
+
+        d = abs(y1 - y2)
+        plt.text(min_val + step * 1.5, d / 2 + min(y1, y2), str(round(d * scale, 2)) + ' mm.', fontsize=18,
+                 color=color, verticalalignment='center', horizontalalignment='center', rotation='vertical')
+    if pos == 'x':
+        plt.plot([x1, x2], [0, 0], 'o-', color=color)
+        plt.plot([x1, x1], [0, step], '-', color=color)
+        plt.plot([x2, x2], [0, step], '-', color=color)
+
+        d = abs(x1 - x2)
+        if text_pos == 'top':
+            plt.text((x1 + x2)/2, step * 0.5, str(round(d*scale, 2))+' mm.', fontsize=18,
+                     color=color, verticalalignment='center', horizontalalignment='center')
+        elif text_pos == 'bottom':
+            plt.text((x1 + x2) / 2, -step * 0.5, str(round(d * scale, 2)) + ' mm.', fontsize=18,
+                     color=color, verticalalignment='center', horizontalalignment='center')
+
+
 fig, ax = plt.subplots(figsize=(15.5, 15))
 
-min_val = -1.5  # min value
-max_val = 1.5  # max value
-
 x = np.linspace(min_val-10, max_val+10, 500000)
-
-step = 0.125
-height = 70
-a = 1
-diameter = 115
 
 
 # get all of the intersections of two graphs
 def get_intersection(y1, y2):
     global x
     index = np.argwhere(np.diff(np.sign(y1 - y2))).flatten()
-    r = []
-    for i in index:
-        tx = x[i]
-        ty = y1[i]
-        r.append((tx, ty))
-    return r
-
-
-# add text with coordinates nearby point
-def text_point(pt, pos='top'):
-    if pos == 'top':
-        plt.text(pt[0] + step / 5, pt[1] + step / 5, str((round(pt[0], 4), round(pt[1], 4))), fontsize=12,
-                 verticalalignment='bottom')
-    elif pos == 'bottom':
-        plt.text(pt[0] + step / 5, pt[1] - step / 5, str((round(pt[0], 4), round(pt[1], 4))), fontsize=12,
-                 verticalalignment='top')
-    return None
-
-
-# distance between two points
-def dist(pt1, pt2):
-    return np.sqrt((pt1[0]-pt2[0])**2 + (pt1[1]-pt2[1])**2)
+    return [Point2D(x[i], y1[i]) for i in index]
 
 
 # create a line from two points
 def get_line(pt1, pt2):
     global x
-    cf = np.polyfit((pt1[0], pt2[0]), (pt1[1], pt2[1]), 1)
+    cf = np.polyfit((pt1.x, pt2.x), (pt1.y, pt2.y), 1)
     p = np.poly1d(cf)
     return p(x)
 
@@ -97,25 +148,25 @@ def get_line(pt1, pt2):
 # hyperbola function
 b = 1  # i don't see any point in changing b, as for now
 c = np.sqrt(a**2 + b**2)
-f1 = c  # first focal point
-f2 = -c  # second focal point
+f1 = Point2D(0, c)  # first focal point
+f2 = Point2D(0, -c)  # second focal point
 y = np.sqrt(x**2/a**2+1)*b  # our hyperbola graph
 
 # calculating scale
-scale = height/f1/2
+scale = height/f1.y/2
 
 # second slice lines
 # left part
 # reflection
-tptl = (-diameter/scale, f2-65/scale)  # target point (left)
-y_left_ref = get_line((0, f1), tptl)
+tptl = Point2D(-diameter/scale, f2.y-65/scale)  # target point (left)
+y_left_ref = get_line(f1, tptl)
 # point
 ptl = get_intersection(y, y_left_ref)[0]
 
 # right part
 # reflection
-tptr = (diameter/scale, f2-65/scale)  # target point (right)
-y_right_ref = get_line((0, f1), tptr)
+tptr = Point2D(diameter/scale, f2.y-65/scale)  # target point (right)
+y_right_ref = get_line(f1, tptr)
 # point
 ptr = get_intersection(y, y_right_ref)[-1]
 
@@ -137,98 +188,58 @@ plt.plot(x, y, '#f15a22')
 
 # plotting left part
 plt.plot(x, y_left_ref, color=(0.3, 0.3, 0.3))
-plt.plot([0, ptl[0]], [f2, ptl[1]], '-', color='green')
+f2.show_seg(ptl, style='-', color='green')
 
 # plotting right part
 plt.plot(x, y_right_ref, color=(0.3, 0.3, 0.3))
-plt.plot([0, ptr[0]], [f2, ptr[1]], '-', color='green')
+f2.show_seg(ptr, style='-', color='green')
 
 # bottom slice
-plt.axhline(ptl[1], linestyle='--', color='purple')
-plt.plot([ptl[0], ptr[0]], [ptl[1], ptr[1]], '-', color='purple')
+plt.axhline(ptl.y, linestyle='--', color='purple')
+ptr.show_seg(ptl, style='-', color='purple')
 
 # top slice
-plt.axhline(f1, linestyle='--', color='purple')
-tsp = get_intersection(0*x+f1, y)
-plt.plot([tsp[0][0], tsp[1][0]], [tsp[0][1], tsp[1][1]], '-', color='purple')
+plt.axhline(f1.y, linestyle='--', color='purple')
+tsp = get_intersection(0*x+f1.y, y)
+tsp[0].show_seg(tsp[1], style='-', color='purple')
 
 # calculating and plotting angle
-plt.plot([tsp[0][0], 0], [tsp[0][1], f2], '-', color='blue')
-plt.plot([tsp[1][0], 0], [tsp[1][1], f2], '-', color='green')
-plt.plot([0, 0], [f1, f2], '-', color='blue')
-plt.plot([tsp[0][0], min_val - 10], [tsp[0][1], tsp[0][1]], '-', color='green')
-plt.plot([tsp[1][0], max_val + 10], [tsp[1][1], tsp[0][1]], '-', color='green')
-alpha = f1*2/dist(tsp[0], (0, f2))
-AngleMarker((0, f2), 600, (0, f1), tsp[0], ax=ax, color='blue')
+f2.show_seg(tsp[0], style='-', color='blue')
+f2.show_seg(tsp[1], style='-', color='green')
+f2.show_seg(f1, style='-', color='blue')
+tsp[0].show_seg(tsp[0].cx(min_val-10), style='-', color='green')
+tsp[1].show_seg(tsp[0].cx(max_val+10), style='-', color='green')
+alpha = f1.y*2/f2.dist(tsp[0])
+AngleMarker(f2.to_tup(), 600, f1.to_tup(), tsp[0].to_tup(), ax=ax, color='blue')
 
 # vertex point
-vertex = (0, b)
+vertex = Point2D(0, b)
 
-# height segment
-plt.plot([max_val-step, max_val-step], [f1, f2], 'o-', color='#913d88')
-plt.plot([max_val-step, max_val-step*2], [f1, f1], '-', color='#913d88')
-plt.plot([max_val-step, max_val-step*2], [f2, f2], '-', color='#913d88')
-
-# height text
-plt.text(max_val-step*1.5, 0, str(height)+' mm.', fontsize=18, color='#913d88', verticalalignment='center',
-         horizontalalignment='center', rotation='vertical')
-
-# lens' height segment
-plt.plot([max_val-step, max_val-step], [f1, vertex[1]], 'o-', color='#4d13d1')
-plt.plot([max_val-step, max_val-step*2], [f1, f1], '-', color='#4d13d1')
-plt.plot([max_val-step, max_val-step*2], [vertex[1], vertex[1]], '-', color='#4d13d1')
-
-# lens' height text
-lensl = f1 - vertex[1]
-plt.text(max_val-step*1.5, lensl/2 + vertex[1], str(round(lensl*scale, 2))+' mm.', fontsize=18, color='#4d13d1',
-         verticalalignment='center', horizontalalignment='center', rotation='vertical')
-
-# top slice's width segment
-plt.plot([tsp[0][0], tsp[1][0]], [0, 0], 'o-', color='#913d88')
-plt.plot([tsp[0][0], tsp[0][0]], [0, step], '-', color='#913d88')
-plt.plot([tsp[1][0], tsp[1][0]], [0, step], '-', color='#913d88')
-
-# top slice's width text
-plt.text(0, -step*0.5, str(round(abs(tsp[0][0] - tsp[1][0])*scale, 2))+' mm.', fontsize=18, color='#663399',
-         verticalalignment='center', horizontalalignment='center')
-
-# bottom slice's width segment
-plt.plot([ptl[0], ptr[0]], [0, 0], 'o-', color='#4d13d1')
-plt.plot([ptl[0], ptl[0]], [0, step], '-', color='#4d13d1')
-plt.plot([ptr[0], ptr[0]], [0, step], '-', color='#4d13d1')
-
-# bottom slice's width text
-plt.text(0, step*0.5, str(round(abs(ptl[0] - ptr[0])*scale, 2))+' mm.', fontsize=18, color='#4d13d1',
-         verticalalignment='center', horizontalalignment='center')
-
-# actual lens' height segment
-plt.plot([min_val+step, min_val+step], [f1, ptl[1]], 'o-', color='#4d13d1')
-plt.plot([min_val+step, min_val+step*2], [f1, f1], '-', color='#4d13d1')
-plt.plot([min_val+step, min_val+step*2], [ptl[1], ptl[1]], '-', color='#4d13d1')
-
-# actual lens' height text
-alensl = f1 - ptl[1]
-plt.text(min_val+step*1.5, alensl/2 + ptl[1], str(round(alensl*scale, 2))+' mm.', fontsize=18, color='#4d13d1',
-         verticalalignment='center', horizontalalignment='center', rotation='vertical')
+# distances in mm
+distance_seg(f1, f2, scale, 'right_y', '#913d88')
+distance_seg(f1, vertex, scale, 'right_y', '#4d13d1')
+distance_seg(tsp[1], tsp[0], scale, 'x', '#913d88', 'bottom')
+distance_seg(ptl, ptr, scale, 'x', '#4d13d1')
+distance_seg(ptl, f1, scale, 'left_y', '#4d13d1')
 
 # text with coordinates nearby points
-text_point((0, f1))
-text_point((0, f2))
-text_point(ptl)
-text_point(ptr)
-plt.plot(ptl[0], ptl[1], 'o', color='purple')
-plt.plot(ptr[0], ptr[1], 'o', color='purple')
+f1.text()
+f2.text()
+ptl.text()
+ptr.text()
+ptl.show('purple')
+ptr.show('purple')
 for i in tsp:
-    plt.plot(i[0], i[1], 'o', color='purple')
-    text_point(i)
-text_point(vertex, pos='bottom')
-plt.plot(vertex[0], vertex[1], 'o', color='#f15a22')
+    i.show('purple')
+    i.text()
+vertex.text('bottom')
+vertex.show('#f15a22')
 
 # top focal point
-plt.plot(0, f1, 'ro')
+f1.show('red')
 
 # bottom focal point
-plt.plot(0, f2, 'ro')
+f2.show('red')
 
 # legend
 patches = []
